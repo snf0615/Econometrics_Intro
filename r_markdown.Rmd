@@ -1,0 +1,883 @@
+---
+title: "Econometrics_Homework 1"
+author:
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Q1
+Replicate the results of Table 1 - panel A (from p.58) in PAPER1. Report in a table the means and standard deviations of the excess returns Ri   Rf for the 25 portfo- lios. Remember to select data within the same time frame as used in the paper. You should be able to obtain results similar to Table 1 - panel A of the paper. Comment briefly.
+
+```{r Q1_code}
+#Q1
+factors_period1 = read.csv('F-F_Research_Data_5_Factors_mm_2x3_63-93.csv')
+Rf_period1 = factors_period1$RF
+Ri_period1 = read.csv('25_Portfolios_5x5_AVWR_mm_63-93.csv')[,2:26]
+exret_period1 = Ri_period1 - Rf_period1
+exret_period1_mean = matrix(nrow = 5, ncol = 5)
+exret_period1_std_dev = matrix(nrow = 5, ncol = 5)
+for (i in 1:25){
+  exret_period1_mean[i] = mean(exret_period1[,i])
+  exret_period1_std_dev[i] = sd(exret_period1[,i])
+}
+exret_period1_mean = t(exret_period1_mean)
+exret_period1_std_dev = t(exret_period1_std_dev)
+```
+
+##Q1-Answer and comment:
+```{r Q1_answer, echo=TRUE}
+exret_period1_mean
+exret_period1_std_dev
+```
+
+The mean table we produced is almost the same with the original mean table, except a few deviations that are large. For example in sample size 2 and Book-to-Market Equity 1, the result from us is 0.376 and the original result is 0.48. We believe it is a result of data revision. The mean excess return generally decreases with size factor increase and increase and generally increases with Book-to-Market Equity factor increase, which is in line with the original result.
+
+The standard deviation table we produced is almost the same with the original table. The standard deviation generally decreases with size factor increase and generally decrease with Book-to-Market Equity factor increase, which is in line with the original result.
+
+# Q2
+Report in a similarly structured table mean, standard deviation, skewness, and excess kurtosis for the market excess return (RM  Rf ); for the difference between the return on a portfolio of small stocks and the return on a portfolio of large stocks (SMB); and for the difference between the return on a portfolio of high-book-to-market stocks and the return on a portfolio of low-book-to-market stocks (HML). Comment briefly.
+
+```{r Q2_code}
+#Q2
+library(moments)
+mktexret_period1 = factors_period1$Mkt.RF
+smb_period1 = factors_period1$SMB
+hml_period1 = factors_period1$HML
+Q2_res = matrix(nrow = 4, ncol = 5)
+Q2_data = cbind(mktexret_period1,smb_period1,hml_period1)
+Q2_res[1,2:5] = c("mean","std dev","skewness","excess kurtosis")
+Q2_res[2:4,1] = c("mkt","smb","hml")
+for (i in 1:3){
+  Q2_res[i+1,2] = mean(Q2_data[,i])
+  Q2_res[i+1,3] = sd(Q2_data[,i])
+  Q2_res[i+1,4] = skewness(Q2_data[,i])
+  Q2_res[i+1,5] = kurtosis(Q2_data[,i])-3
+}
+```
+
+##Q2-Answer and comment:
+```{r Q2_answer, echo=TRUE}
+Q2_res
+```
+
+The mean of the market excess return is the second largest among three factors. Its standard deviation is the largest. The negative skewness of the factor indicates that the RM-Rf has a distribution that is not symmetrical and tend to the right side. The excess kurtosis is 2.49 indicates the distribution has some fat-tail. (Normal distribution has an excess kurtosis of 0.)
+
+The mean of the SMB is the smallest among three factors. The standard deviation is the second largest. The positive skewness of the factor indicates that the SMB has a distribution that is not symmetrical and tend to the left side. The excess kurtosis is 1.59 indicates the distribution has some fat-tail, but not as fat as market excess return. (Normal distribution has an excess kurtosis of 0.)
+
+The mean of HML is the largest among three factors, with standard deviation the smallest of three. The skewness of the factor is near zero indicates that the HML has a distribution that is almost symmetrical. The excess kurtosis is 1.09 indicates the distribution has the smallest fat-tail among all three factors. (Normal distribution has an excess kurtosis of 0.)
+
+# Q3
+Estimate the model Equation (2) in PAPER1 for all book-to-market equity quintiles and all sizes excess returns portfolios by OLS (i.e. replicate the results reported in Table 1 - panel B, except for the standard errors of the R2). Compare your results with Table 1 - panel B of PAPER1.
+
+```{r Q3_code}
+#Q3
+model1_a = matrix(0,5,5)
+model1_ta = matrix(0,5,5)
+model1_b = matrix(0,5,5)
+model1_tb = matrix(0,5,5)
+model1_s = matrix(0,5,5)
+model1_ts = matrix(0,5,5)
+model1_h = matrix(0,5,5)
+model1_th = matrix(0,5,5)
+model1_Rsq = matrix(0,5,5)
+factors_period1 = read.csv('F-F_Research_Data_5_Factors_mm_2x3_63-93.csv')
+Rf_period1 = factors_period1$RF
+Ri_period1 = read.csv('25_Portfolios_5x5_AVWR_mm_63-93.csv')[,2:26]
+exret_period1 = Ri_period1 - Rf_period1
+for (i in 1:25){
+  model1_period1 = lm(exret_period1[,i]~factors_period1$Mkt.RF+factors_period1$SMB+factors_period1$HML)
+  model1_a[i] = summary(model1_period1)$coefficients[1,1]
+  model1_ta[i] = summary(model1_period1)$coefficients[1,3]
+  model1_b[i] = summary(model1_period1)$coefficients[2,1]
+  model1_tb[i] = summary(model1_period1)$coefficients[2,3]
+  model1_s[i] = summary(model1_period1)$coefficients[3,1]
+  model1_ts[i] = summary(model1_period1)$coefficients[3,3]
+  model1_h[i] = summary(model1_period1)$coefficients[4,1]
+  model1_th[i] = summary(model1_period1)$coefficients[4,3]
+  model1_Rsq[i] = summary(model1_period1)$r.squared
+}
+model1_a = t(model1_a)
+model1_ta = t(model1_ta)
+model1_b = t(model1_b)
+model1_tb = t(model1_tb)
+model1_s = t(model1_s)
+model1_ts = t(model1_ts)
+model1_h = t(model1_h)
+model1_th = t(model1_th)
+model1_Rsq = t(model1_Rsq)
+```
+
+##Q3-Answer and comment:
+```{r Q3_answer, echo=TRUE}
+model1_a
+model1_ta
+model1_b
+model1_tb
+model1_s
+model1_ts
+model1_h
+model1_th
+model1_Rsq
+```
+
+Our regression result is generally the same with Table 1 – panel B of PAPER1. There are several deviations from the result with the original table’s data which we believe are due to data revision.
+
+# Q4
+Assume that you have doubt about heteroskedasticity and/or serial correlation in the residuals. Replicate the table in the previous question but report t-statistics based on White and Newey-West standard errors respectively. Do you observe any difference?
+
+```{r Q4_code}
+#Q4
+factors_period1 = read.csv('F-F_Research_Data_5_Factors_mm_2x3_63-93.csv')
+Rf_period1 = factors_period1$RF
+Ri_period1 = read.csv('25_Portfolios_5x5_AVWR_mm_63-93.csv')[,2:26]
+exret_period1 = Ri_period1 - Rf_period1
+
+model1_a = matrix(0,5,5)
+model1_ta = matrix(0,5,5)
+model1_b = matrix(0,5,5)
+model1_tb = matrix(0,5,5)
+model1_s = matrix(0,5,5)
+model1_ts = matrix(0,5,5)
+model1_h = matrix(0,5,5)
+model1_th = matrix(0,5,5)
+model1_Rsq = matrix(0,5,5)
+for (i in 1:25){
+  model1_period1 = lm(exret_period1[,i]~factors_period1$Mkt.RF+factors_period1$SMB+factors_period1$HML)
+  model1_a[i] = summary(model1_period1)$coefficients[1,1]
+  model1_ta[i] = summary(model1_period1)$coefficients[1,3]
+  model1_b[i] = summary(model1_period1)$coefficients[2,1]
+  model1_tb[i] = summary(model1_period1)$coefficients[2,3]
+  model1_s[i] = summary(model1_period1)$coefficients[3,1]
+  model1_ts[i] = summary(model1_period1)$coefficients[3,3]
+  model1_h[i] = summary(model1_period1)$coefficients[4,1]
+  model1_th[i] = summary(model1_period1)$coefficients[4,3]
+  model1_Rsq[i] = summary(model1_period1)$r.squared
+}
+model1_a = t(model1_a)
+model1_ta = t(model1_ta)
+model1_b = t(model1_b)
+model1_tb = t(model1_tb)
+model1_s = t(model1_s)
+model1_ts = t(model1_ts)
+model1_h = t(model1_h)
+model1_th = t(model1_th)
+model1_Rsq = t(model1_Rsq)
+
+library(lmtest)
+library(sandwich)
+model1_white_ta = matrix(0,5,5)
+model1_white_tb = matrix(0,5,5)
+model1_white_ts = matrix(0,5,5)
+model1_white_th = matrix(0,5,5)
+model1_NeweyWest_ta = matrix(0,5,5)
+model1_NeweyWest_tb = matrix(0,5,5)
+model1_NeweyWest_ts = matrix(0,5,5)
+model1_NeweyWest_th = matrix(0,5,5)
+for (i in 1:25){
+  #same model in Q3
+  model1_period1 = lm(exret_period1[,i]~factors_period1$Mkt.RF+factors_period1$SMB+factors_period1$HML)
+  
+  #White heteroskedasticity
+  model1_white_ta[i] = coeftest(model1_period1, vcov=vcovHC, type=c("HC"))[1,3]
+  model1_white_tb[i] = coeftest(model1_period1, vcov=vcovHC, type=c("HC"))[2,3]
+  model1_white_ts[i] = coeftest(model1_period1, vcov=vcovHC, type=c("HC"))[3,3]
+  model1_white_th[i] = coeftest(model1_period1, vcov=vcovHC, type=c("HC"))[4,3]
+  #NeweyWest heteroskedasticity and auto correlation (serial corr??)
+  model1_NeweyWest_ta[i] = coeftest(model1_period1, vcov.=NeweyWest)[1,3]
+  model1_NeweyWest_tb[i] = coeftest(model1_period1, vcov.=NeweyWest)[2,3]
+  model1_NeweyWest_ts[i] = coeftest(model1_period1, vcov.=NeweyWest)[3,3]
+  model1_NeweyWest_th[i] = coeftest(model1_period1, vcov.=NeweyWest)[4,3]
+}
+model1_white_ta = t(model1_white_ta)
+model1_white_tb = t(model1_white_tb)
+model1_white_ts = t(model1_white_ts)
+model1_white_th = t(model1_white_th)
+model1_NeweyWest_ta = t(model1_NeweyWest_ta)
+model1_NeweyWest_tb = t(model1_NeweyWest_tb)
+model1_NeweyWest_ts = t(model1_NeweyWest_ts)
+model1_NeweyWest_th = t(model1_NeweyWest_th)
+
+#TRUE = rej H0 = significant
+model1_white_rej_ta = (model1_white_ta > qnorm(0.975) | model1_white_ta < qnorm(0.025))
+model1_white_rej_tb = (model1_white_tb > qnorm(0.975) | model1_white_tb < qnorm(0.025))
+model1_white_rej_ts = (model1_white_ts > qnorm(0.975) | model1_white_ts < qnorm(0.025))
+model1_white_rej_th = (model1_white_th > qnorm(0.975) | model1_white_th < qnorm(0.025))
+model1_NeweyWest_rej_ta = (model1_NeweyWest_ta > qnorm(0.975) | model1_NeweyWest_ta < qnorm(0.025))
+model1_NeweyWest_rej_tb = (model1_NeweyWest_tb > qnorm(0.975) | model1_NeweyWest_tb < qnorm(0.025))
+model1_NeweyWest_rej_ts = (model1_NeweyWest_ts > qnorm(0.975) | model1_NeweyWest_ts < qnorm(0.025))
+model1_NeweyWest_rej_th = (model1_NeweyWest_th > qnorm(0.975) | model1_NeweyWest_th < qnorm(0.025))
+
+#to compare with model1 of Q3
+model1_rej_ta = (model1_ta > qnorm(0.975) | model1_ta < qnorm(0.025))
+model1_rej_tb = (model1_tb > qnorm(0.975) | model1_tb < qnorm(0.025))
+model1_rej_ts = (model1_ts > qnorm(0.975) | model1_ts < qnorm(0.025))
+model1_rej_th = (model1_th > qnorm(0.975) | model1_th < qnorm(0.025))
+#TRUE = significance not modified by heteroskedasticity = no heteroskedasticity
+model1_ta_sig_white = (model1_rej_ta == model1_white_rej_ta)
+model1_tb_sig_white = (model1_rej_tb == model1_white_rej_tb)
+model1_ts_sig_white = (model1_rej_ts == model1_white_rej_ts)
+model1_th_sig_white = (model1_rej_th == model1_white_rej_th)
+#TRUE = significance not modified by heteroskedasticity and auto corr = no heteroskedasticity and auto corr
+model1_ta_sig_NeweyWest = (model1_rej_ta == model1_NeweyWest_rej_ta)
+model1_tb_sig_NeweyWest = (model1_rej_tb == model1_NeweyWest_rej_tb)
+model1_ts_sig_NeweyWest = (model1_rej_ts == model1_NeweyWest_rej_ts)
+model1_th_sig_NeweyWest = (model1_rej_th == model1_NeweyWest_rej_th)
+```
+
+##Q4-Answer and comment:
+Refer to the code, we have test the model using White test (consider heteroskedasticity) and test the model using Newey-West test (consider both heteroskedasticity and serial correlation). 
+
+According to the White test,
+
+```{r Q4_answer1, echo = TRUE}
+# t statistics based on White standard errors
+model1_white_ta
+model1_white_tb
+model1_white_ts
+model1_white_th
+
+#TRUE = rej H0 = significant
+model1_white_rej_ta
+model1_white_rej_tb
+model1_white_rej_ts
+model1_white_rej_th
+
+#to compare with model1 of Q3
+model1_rej_ta
+model1_rej_tb
+model1_rej_ts
+model1_rej_th
+
+#TRUE = significance not modified by heteroskedasticity = no heteroskedasticity
+model1_ta_sig_white
+model1_tb_sig_white
+model1_ts_sig_white
+model1_th_sig_white
+```
+
+Looking at the original model and original model incorporated with White test, we observed large difference on the t-statistics. This observation is consistent with the theory that if heteroskedasticity exists, it is going to affect the variance of beta hat. Thus, heteroskedasticity also affects the t-value and statistical inference. In general, the standard error of beta estimates will be larger with coefficients to be the same. Therefore, the absolute value of t-statistic ((beta – 0)/standard error) will be smaller. As we can observe in the test result that almost in every case the t-statistic becomes smaller.
+
+According to the NeweyWest test,
+
+```{r Q4_answer2, echo = TRUE}
+# t statistics based on NeweyWest standard errors
+model1_NeweyWest_ta
+model1_NeweyWest_tb
+model1_NeweyWest_ts
+model1_NeweyWest_th
+
+#TRUE = rej H0 = significant
+model1_NeweyWest_rej_ta
+model1_NeweyWest_rej_tb
+model1_NeweyWest_rej_ts
+model1_NeweyWest_rej_th
+
+#to compare with model1 of Q3
+model1_rej_ta
+model1_rej_tb
+model1_rej_ts
+model1_rej_th
+
+#TRUE = significance not modified by heteroskedasticity and auto corr = no heteroskedasticity and auto corr
+model1_ta_sig_NeweyWest
+model1_tb_sig_NeweyWest
+model1_ts_sig_NeweyWest
+model1_th_sig_NeweyWest
+```
+
+Looking at the original model and original model incorporated with NeweyWest test, we observed large difference on the t-statistics. This observation is consistent with the theory that if heteroskedasticity and serial correlation exist, it is going to affect the variance of beta hat. Thus, heteroskedasticity and serial correlation also affects the t-value and statistical inference. In general, the standard error of beta estimates will be larger with coefficients to be the same. Therefore, the absolute value of t-statistic ((beta – 0)/standard error) will be smaller. As we can observe in the test result that almost in every case the t-statistic becomes smaller.
+
+To take a step further, we use 5% significance level for a two-tail test, to compare the result of original model, model with White test and NeweyWest test. The test results are almost the same if we take into account of heteroskedasticity and serial correlation that is the coefficients are either significant or insignificant as the original model. The only difference is in model of size 2 and Book-to-market Equity 1, the White test rejected the null hypothesis of beta zero equals zero, while original model cannot reject the null hypothesis of beta zero equals zero. 
+
+# Q5
+Replicate the table reported in Question 3 but using the most recent data (January 1994 - September 2016). Do you observe any relevant change in the pattern of the coe cients between the two periods? Test this hypothesis using Chow tests for struc- tural breaks in the data. Put your results in a table.
+
+```{r Q5_code}
+#Q5
+#D=0 in 1963-1993, D=1 in 1994-2016
+D = (read.csv('25_Portfolios_5x5_AVWR_mm_63-16.csv')[,1]>="199401")
+factors_period2 = read.csv('F-F_Research_Data_5_Factors_2x3_63-16.csv')[D==TRUE,]
+Rf_period2 = factors_period2$RF
+Ri_period2 = read.csv('25_Portfolios_5x5_AVWR_mm_63-16.csv')[D==TRUE,][,2:26]
+exret_period2 = Ri_period2 - Rf_period2
+
+model1_period2_a = matrix(0,5,5)
+model1_period2_ta = matrix(0,5,5)
+model1_period2_b = matrix(0,5,5)
+model1_period2_tb = matrix(0,5,5)
+model1_period2_s = matrix(0,5,5)
+model1_period2_ts = matrix(0,5,5)
+model1_period2_h = matrix(0,5,5)
+model1_period2_th = matrix(0,5,5)
+model1_period2_Rsq = matrix(0,5,5)
+for (i in 1:25){
+  model1_period2 = lm(exret_period2[,i]~factors_period2$Mkt.RF+factors_period2$SMB+factors_period2$HML)
+  model1_period2_a[i] = summary(model1_period2)$coefficients[1,1]
+  model1_period2_ta[i] = summary(model1_period2)$coefficients[1,3]
+  model1_period2_b[i] = summary(model1_period2)$coefficients[2,1]
+  model1_period2_tb[i] = summary(model1_period2)$coefficients[2,3]
+  model1_period2_s[i] = summary(model1_period2)$coefficients[3,1]
+  model1_period2_ts[i] = summary(model1_period2)$coefficients[3,3]
+  model1_period2_h[i] = summary(model1_period2)$coefficients[4,1]
+  model1_period2_th[i] = summary(model1_period2)$coefficients[4,3]
+  model1_period2_Rsq[i] = summary(model1_period2)$r.squared
+}
+model1_period2_a = t(model1_period2_a)
+model1_period2_ta = t(model1_period2_ta)
+model1_period2_b = t(model1_period2_b)
+model1_period2_tb = t(model1_period2_tb)
+model1_period2_s = t(model1_period2_s)
+model1_period2_ts = t(model1_period2_ts)
+model1_period2_h = t(model1_period2_h)
+model1_period2_th = t(model1_period2_th)
+model1_period2_Rsq = t(model1_period2_Rsq)
+
+factors_period1 = read.csv('F-F_Research_Data_5_Factors_mm_2x3_63-93.csv')
+Rf_period1 = factors_period1$RF
+Ri_period1 = read.csv('25_Portfolios_5x5_AVWR_mm_63-93.csv')[,2:26]
+exret_period1 = Ri_period1 - Rf_period1
+
+model1_period1_a = matrix(0,5,5)
+model1_period1_ta = matrix(0,5,5)
+model1_period1_b = matrix(0,5,5)
+model1_period1_tb = matrix(0,5,5)
+model1_period1_s = matrix(0,5,5)
+model1_period1_ts = matrix(0,5,5)
+model1_period1_h = matrix(0,5,5)
+model1_period1_th = matrix(0,5,5)
+model1_period1_Rsq = matrix(0,5,5)
+for (i in 1:25){
+  model1_period1 = lm(exret_period1[,i]~factors_period1$Mkt.RF+factors_period1$SMB+factors_period1$HML)
+  model1_period1_a[i] = summary(model1_period1)$coefficients[1,1]
+  model1_period1_ta[i] = summary(model1_period1)$coefficients[1,3]
+  model1_period1_b[i] = summary(model1_period1)$coefficients[2,1]
+  model1_period1_tb[i] = summary(model1_period1)$coefficients[2,3]
+  model1_period1_s[i] = summary(model1_period1)$coefficients[3,1]
+  model1_period1_ts[i] = summary(model1_period1)$coefficients[3,3]
+  model1_period1_h[i] = summary(model1_period1)$coefficients[4,1]
+  model1_period1_th[i] = summary(model1_period1)$coefficients[4,3]
+  model1_period1_Rsq[i] = summary(model1_period1)$r.squared
+}
+model1_period1_a = t(model1_period1_a)
+model1_period1_ta = t(model1_period1_ta)
+model1_period1_b = t(model1_period1_b)
+model1_period1_tb = t(model1_period1_tb)
+model1_period1_s = t(model1_period1_s)
+model1_period1_ts = t(model1_period1_ts)
+model1_period1_h = t(model1_period1_h)
+model1_period1_th = t(model1_period1_th)
+model1_period1_Rsq = t(model1_period1_Rsq)
+
+#Chow test starts
+chowtest_fvalue = matrix(ncol = 5, nrow = 5)
+factors_wholeperiod = read.csv('F-F_Research_Data_5_Factors_2x3_63-16.csv')
+Rf_wholeperiod = factors_wholeperiod$RF
+Ri_wholeperiod = read.csv('25_Portfolios_5x5_AVWR_mm_63-16.csv')[,2:26]
+exret_wholeperiod = Ri_wholeperiod - Rf_wholeperiod
+mktexret_wholeperiod = factors_wholeperiod$Mkt.RF
+smb_wholeperiod = factors_wholeperiod$SMB
+hml_wholeperiod = factors_wholeperiod$HML
+for (i in 1:25){
+  model_unrestr = lm(exret_wholeperiod[,i]~mktexret_wholeperiod+smb_wholeperiod+hml_wholeperiod+
+                       D*mktexret_wholeperiod+D*smb_wholeperiod+D*hml_wholeperiod)
+  ssru = sum(model_unrestr$residuals^2)
+  
+  model_period1 = lm(exret_period1[,i]~factors_period1$Mkt.RF+factors_period1$SMB+factors_period1$HML)
+  model_period2 = lm(exret_period2[,i]~factors_period2$Mkt.RF+factors_period2$SMB+factors_period2$HML)
+  ssru_period1=sum(model_period1$residuals^2)
+  ssru_period2=sum(model_period2$residuals^2)
+  ssrutotal=ssru_period1+ssru_period2 #equals to ssru
+  
+  model_restr = lm(exret_wholeperiod[,i]~factors_wholeperiod$Mkt.RF+
+                     factors_wholeperiod$SMB+factors_wholeperiod$HML)
+  ssrr = sum(model_restr$residuals^2)
+  
+  nrestr = 4
+  upf = (ssrr-ssrutotal)/nrestr
+  lowf = ssrutotal/(length(exret_wholeperiod[,i])-length(model_unrestr$coefficients))
+  chowtest_fvalue[i] = upf/lowf
+  #anova(model_unrestr, model_restr)[2,5] is the same as upf/lowf !
+}
+chowtest_fvalue = t(chowtest_fvalue)
+threshold=qf(0.95, nrestr, length(exret_wholeperiod[,25])-length(model_unrestr$coefficients))
+chowtest_stable = (chowtest_fvalue<=threshold)
+```
+
+##Q5-Answer and comment:
+
+We perform a Chow test for 25 portfolio models on two different periods. Under significance level of 5%, we find 4 portfolio models have constant parameters over two different periods. They are respectively, size 1 and Book-to-market Equity 3, size 1 and Book-to-market Equity 4, size 2 and Book-to-market Equity 1, size 4 and Book-to-market Equity 4. Other portfolio models, according to Chow test result, yield different parameters over two periods.
+
+```{r Q5_answer, echo=TRUE}
+# parameters' value change between two periods ? a sort of unstable
+# would be best if could compare on graph..
+model1_period2_a
+model1_period1_a
+model1_period2_b
+model1_period1_b
+model1_period2_s
+model1_period1_s
+model1_period2_h
+model1_period1_h
+
+# result of Chow test
+chowtest_fvalue
+chowtest_stable
+```
+
+# Q6
+Following the recent findings of PAPER2, augment the model with the RMW and CMA factors. Estimate the model with these additional factors using the recent sample January 1994- September 2017. Report results in a similar structure as done in the previous exercises. What is your conclusion about the addi- tional factors? Make tests if the coe cients are individually and jointly significant. Summarise the results in a table.
+
+```{r Q6_code}
+#Q6
+D = (read.csv('25_Portfolios_5x5_AVWR_mm_63-17.csv')[,1]>="199401")
+factors_period2 = read.csv('F-F_Research_Data_5_Factors_2x3_63-17.csv')[D==TRUE,]
+Rf_period2 = factors_period2$RF
+Ri_period2 = read.csv('25_Portfolios_5x5_AVWR_mm_63-17.csv')[D==TRUE,][,2:26]
+exret_period2 = Ri_period2 - Rf_period2
+mktexret_period2 = factors_period2$Mkt.RF
+smb_period2 = factors_period2$SMB
+hml_period2 = factors_period2$HML
+rmw_period2 = factors_period2$RMW
+cma_period2 = factors_period2$CMA
+
+model2_period2_Rsq = matrix(0,5,5)
+model2_period2_ta = matrix(0,5,5)
+model2_period2_tb = matrix(0,5,5)
+model2_period2_ts = matrix(0,5,5)
+model2_period2_th = matrix(0,5,5)
+model2_period2_tr = matrix(0,5,5)
+model2_period2_tc = matrix(0,5,5)
+model2_period2_a = matrix(0,5,5)
+model2_period2_b = matrix(0,5,5)
+model2_period2_s = matrix(0,5,5)
+model2_period2_h = matrix(0,5,5)
+model2_period2_r = matrix(0,5,5)
+model2_period2_c = matrix(0,5,5)
+model2_period2_white_ta = matrix(0,5,5)
+model2_period2_white_tb = matrix(0,5,5)
+model2_period2_white_ts = matrix(0,5,5)
+model2_period2_white_th = matrix(0,5,5)
+model2_period2_white_tr = matrix(0,5,5)
+model2_period2_white_tc = matrix(0,5,5)
+model2_period2_NeweyWest_ta = matrix(0,5,5)
+model2_period2_NeweyWest_tb = matrix(0,5,5)
+model2_period2_NeweyWest_ts = matrix(0,5,5)
+model2_period2_NeweyWest_th = matrix(0,5,5)
+model2_period2_NeweyWest_tr = matrix(0,5,5)
+model2_period2_NeweyWest_tc = matrix(0,5,5)
+
+library(lmtest)
+library(sandwich)
+for (i in 1:25){
+  model2_period2 = lm(exret_period2[,i]~mktexret_period2+smb_period2+
+                        hml_period2+rmw_period2+cma_period2)
+  model2_period2_Rsq[i] = summary(model2_period2)$r.squared
+  model2_period2_a[i] = summary(model2_period2)$coefficients[1,1]
+  model2_period2_b[i] = summary(model2_period2)$coefficients[2,1]
+  model2_period2_s[i] = summary(model2_period2)$coefficients[3,1]
+  model2_period2_h[i] = summary(model2_period2)$coefficients[4,1]
+  model2_period2_r[i] = summary(model2_period2)$coefficients[5,1]
+  model2_period2_c[i] = summary(model2_period2)$coefficients[6,1]
+  #t statistics
+  model2_period2_ta[i] = summary(model2_period2)$coefficients[1,3]
+  model2_period2_tb[i] = summary(model2_period2)$coefficients[2,3]
+  model2_period2_ts[i] = summary(model2_period2)$coefficients[3,3]
+  model2_period2_th[i] = summary(model2_period2)$coefficients[4,3]
+  model2_period2_tr[i] = summary(model2_period2)$coefficients[5,3]
+  model2_period2_tc[i] = summary(model2_period2)$coefficients[6,3]
+  #White heteroskedasticity
+  model2_period2_white_ta[i] = coeftest(model2_period2, vcov=vcovHC, type=c("HC"))[1,3]
+  model2_period2_white_tb[i] = coeftest(model2_period2, vcov=vcovHC, type=c("HC"))[2,3]
+  model2_period2_white_ts[i] = coeftest(model2_period2, vcov=vcovHC, type=c("HC"))[3,3]
+  model2_period2_white_th[i] = coeftest(model2_period2, vcov=vcovHC, type=c("HC"))[4,3]
+  model2_period2_white_tr[i] = coeftest(model2_period2, vcov=vcovHC, type=c("HC"))[5,3]
+  model2_period2_white_tc[i] = coeftest(model2_period2, vcov=vcovHC, type=c("HC"))[6,3]
+  #NeweyWest heteroskedasticity and auto correlation (serial corr??)
+  model2_period2_NeweyWest_ta[i] = coeftest(model2_period2, vcov.=NeweyWest)[1,3]
+  model2_period2_NeweyWest_tb[i] = coeftest(model2_period2, vcov.=NeweyWest)[2,3]
+  model2_period2_NeweyWest_ts[i] = coeftest(model2_period2, vcov.=NeweyWest)[3,3]
+  model2_period2_NeweyWest_th[i] = coeftest(model2_period2, vcov.=NeweyWest)[4,3]
+  model2_period2_NeweyWest_tr[i] = coeftest(model2_period2, vcov.=NeweyWest)[5,3]
+  model2_period2_NeweyWest_tc[i] = coeftest(model2_period2, vcov.=NeweyWest)[6,3]
+}
+# to talk about Rsq
+model2_period2_Rsq = t(model2_period2_Rsq)
+model2_period2_a = t(model2_period2_a)
+model2_period2_b = t(model2_period2_b)
+model2_period2_s = t(model2_period2_s)
+model2_period2_h = t(model2_period2_h)
+model2_period2_r = t(model2_period2_r)
+model2_period2_c = t(model2_period2_c)
+model2_period2_ta = t(model2_period2_ta)
+model2_period2_tb = t(model2_period2_tb)
+model2_period2_ts = t(model2_period2_ts)
+model2_period2_th = t(model2_period2_th)
+model2_period2_tr = t(model2_period2_tr)
+model2_period2_tc = t(model2_period2_tc)
+model2_period2_white_ta = t(model2_period2_white_ta)
+model2_period2_white_tb = t(model2_period2_white_tb)
+model2_period2_white_ts = t(model2_period2_white_ts)
+model2_period2_white_th = t(model2_period2_white_th)
+model2_period2_white_tr = t(model2_period2_white_tr)
+model2_period2_white_tc = t(model2_period2_white_tc)
+model2_period2_NeweyWest_ta = t(model2_period2_NeweyWest_ta)
+model2_period2_NeweyWest_tb = t(model2_period2_NeweyWest_tb)
+model2_period2_NeweyWest_ts = t(model2_period2_NeweyWest_ts)
+model2_period2_NeweyWest_th = t(model2_period2_NeweyWest_th)
+model2_period2_NeweyWest_tr = t(model2_period2_NeweyWest_tr)
+model2_period2_NeweyWest_tc = t(model2_period2_NeweyWest_tc)
+
+# compute t statistics of model1_period2 in Q5:
+D = (read.csv('25_Portfolios_5x5_AVWR_mm_63-16.csv')[,1]>="199401")
+factors_period2 = read.csv('F-F_Research_Data_5_Factors_2x3_63-16.csv')[D==TRUE,]
+Rf_period2 = factors_period2$RF
+Ri_period2 = read.csv('25_Portfolios_5x5_AVWR_mm_63-16.csv')[D==TRUE,][,2:26]
+exret_period2 = Ri_period2 - Rf_period2
+
+model1_period2_a = matrix(0,5,5)
+model1_period2_ta = matrix(0,5,5)
+model1_period2_b = matrix(0,5,5)
+model1_period2_tb = matrix(0,5,5)
+model1_period2_s = matrix(0,5,5)
+model1_period2_ts = matrix(0,5,5)
+model1_period2_h = matrix(0,5,5)
+model1_period2_th = matrix(0,5,5)
+model1_period2_Rsq = matrix(0,5,5)
+model1_period2_white_ta = matrix(0,5,5)
+model1_period2_white_tb = matrix(0,5,5)
+model1_period2_white_ts = matrix(0,5,5)
+model1_period2_white_th = matrix(0,5,5)
+model1_period2_NeweyWest_ta = matrix(0,5,5)
+model1_period2_NeweyWest_tb = matrix(0,5,5)
+model1_period2_NeweyWest_ts = matrix(0,5,5)
+model1_period2_NeweyWest_th = matrix(0,5,5)
+for (i in 1:25){
+  model1_period2 = lm(exret_period2[,i]~factors_period2$Mkt.RF+
+                        factors_period2$SMB+factors_period2$HML)
+  
+  model1_period2_a[i] = summary(model1_period2)$coefficients[1,1]
+  model1_period2_ta[i] = summary(model1_period2)$coefficients[1,3]
+  model1_period2_b[i] = summary(model1_period2)$coefficients[2,1]
+  model1_period2_tb[i] = summary(model1_period2)$coefficients[2,3]
+  model1_period2_s[i] = summary(model1_period2)$coefficients[3,1]
+  model1_period2_ts[i] = summary(model1_period2)$coefficients[3,3]
+  model1_period2_h[i] = summary(model1_period2)$coefficients[4,1]
+  model1_period2_th[i] = summary(model1_period2)$coefficients[4,3]
+  model1_period2_Rsq[i] = summary(model1_period2)$r.squared
+  #White heteroskedasticity
+  model1_period2_white_ta[i] = coeftest(model1_period2, vcov=vcovHC, type=c("HC"))[1,3]
+  model1_period2_white_tb[i] = coeftest(model1_period2, vcov=vcovHC, type=c("HC"))[2,3]
+  model1_period2_white_ts[i] = coeftest(model1_period2, vcov=vcovHC, type=c("HC"))[3,3]
+  model1_period2_white_th[i] = coeftest(model1_period2, vcov=vcovHC, type=c("HC"))[4,3]
+  #NeweyWest heteroskedasticity and auto correlation (serial corr??)
+  model1_period2_NeweyWest_ta[i] = coeftest(model1_period2, vcov.=NeweyWest)[1,3]
+  model1_period2_NeweyWest_tb[i] = coeftest(model1_period2, vcov.=NeweyWest)[2,3]
+  model1_period2_NeweyWest_ts[i] = coeftest(model1_period2, vcov.=NeweyWest)[3,3]
+  model1_period2_NeweyWest_th[i] = coeftest(model1_period2, vcov.=NeweyWest)[4,3]
+}
+model1_period2_a = t(model1_period2_a)
+model1_period2_ta = t(model1_period2_ta)
+model1_period2_b = t(model1_period2_b)
+model1_period2_tb = t(model1_period2_tb)
+model1_period2_s = t(model1_period2_s)
+model1_period2_ts = t(model1_period2_ts)
+model1_period2_h = t(model1_period2_h)
+model1_period2_th = t(model1_period2_th)
+model1_period2_Rsq = t(model1_period2_Rsq)
+model1_period2_white_ta = t(model1_period2_white_ta)
+model1_period2_white_tb = t(model1_period2_white_tb)
+model1_period2_white_ts = t(model1_period2_white_ts)
+model1_period2_white_th = t(model1_period2_white_th)
+model1_period2_NeweyWest_ta = t(model1_period2_NeweyWest_ta)
+model1_period2_NeweyWest_tb = t(model1_period2_NeweyWest_tb)
+model1_period2_NeweyWest_ts = t(model1_period2_NeweyWest_ts)
+model1_period2_NeweyWest_th = t(model1_period2_NeweyWest_th)
+
+#individually significance: t tests
+# t tests for model2_period2 of Q6
+# TRUE = rej H0 = individually significant
+model2_period2_ta_sig = (model2_period2_ta>qnorm(0.975) | model2_period2_ta<qnorm(0.025))
+model2_period2_tb_sig = (model2_period2_tb>qnorm(0.975) | model2_period2_tb<qnorm(0.025))
+model2_period2_ts_sig = (model2_period2_ts>qnorm(0.975) | model2_period2_ts<qnorm(0.025))
+model2_period2_th_sig = (model2_period2_th>qnorm(0.975) | model2_period2_th<qnorm(0.025))
+model2_period2_tr_sig = (model2_period2_tr>qnorm(0.975) | model2_period2_tr<qnorm(0.025))
+model2_period2_tc_sig = (model2_period2_tc>qnorm(0.975) | model2_period2_tc<qnorm(0.025))
+
+# individually significance tests for model1_period2 in Q5
+# TRUE = rej H0 = significant
+model1_period2_rej_ta = (model1_period2_ta > qnorm(0.975) | model1_period2_ta < qnorm(0.025))
+model1_period2_rej_tb = (model1_period2_tb > qnorm(0.975) | model1_period2_tb < qnorm(0.025))
+model1_period2_rej_ts = (model1_period2_ts > qnorm(0.975) | model1_period2_ts < qnorm(0.025))
+model1_period2_rej_th = (model1_period2_th > qnorm(0.975) | model1_period2_th < qnorm(0.025))
+
+#is there heteroskedasticity of model2_period2 (after added SMW AMC) ?
+#TRUE = rej H0 = significant
+model2_period2_white_rej_ta = 
+  (model2_period2_white_ta > qnorm(0.975) | model2_period2_white_ta < qnorm(0.025))
+model2_period2_white_rej_tb = 
+  (model2_period2_white_tb > qnorm(0.975) | model2_period2_white_tb < qnorm(0.025))
+model2_period2_white_rej_ts = 
+  (model2_period2_white_ts > qnorm(0.975) | model2_period2_white_ts < qnorm(0.025))
+model2_period2_white_rej_th = 
+  (model2_period2_white_th > qnorm(0.975) | model2_period2_white_th < qnorm(0.025))
+model2_period2_white_rej_tr = 
+  (model2_period2_white_tr > qnorm(0.975) | model2_period2_white_tr < qnorm(0.025))
+model2_period2_white_rej_tc = 
+  (model2_period2_white_tc > qnorm(0.975) | model2_period2_white_tc < qnorm(0.025))
+
+#is there heteroskedasticity and auto corr of model2_period2 (after added SMW AMC) ?
+#TRUE = rej H0 = significant
+model2_period2_NeweyWest_rej_ta = (model2_period2_NeweyWest_ta >
+                                     qnorm(0.975) | model2_period2_NeweyWest_ta < qnorm(0.025))
+model2_period2_NeweyWest_rej_tb = (model2_period2_NeweyWest_tb >
+                                     qnorm(0.975) | model2_period2_NeweyWest_tb < qnorm(0.025))
+model2_period2_NeweyWest_rej_ts = (model2_period2_NeweyWest_ts >
+                                     qnorm(0.975) | model2_period2_NeweyWest_ts < qnorm(0.025))
+model2_period2_NeweyWest_rej_th = (model2_period2_NeweyWest_th >
+                                     qnorm(0.975) | model2_period2_NeweyWest_th < qnorm(0.025))
+model2_period2_NeweyWest_rej_tr = (model2_period2_NeweyWest_tr >
+                                     qnorm(0.975) | model2_period2_NeweyWest_tr < qnorm(0.025))
+model2_period2_NeweyWest_rej_tc = (model2_period2_NeweyWest_tc >
+                                     qnorm(0.975) | model2_period2_NeweyWest_tc < qnorm(0.025))
+
+#Are significances of parameters influenced by heteroskedasticity in model2_period2 (after added SMW AMC) ?
+#TRUE = significance not modified by heteroskedasticity = no heteroskedasticity
+model2_period2_ta_sig_white = (model2_period2_ta_sig == model2_period2_white_rej_ta)
+model2_period2_tb_sig_white = (model2_period2_tb_sig == model2_period2_white_rej_tb)
+model2_period2_ts_sig_white = (model2_period2_ts_sig == model2_period2_white_rej_ts)
+model2_period2_th_sig_white = (model2_period2_th_sig == model2_period2_white_rej_th)
+model2_period2_tr_sig_white = (model2_period2_tr_sig == model2_period2_white_rej_tr)
+model2_period2_tc_sig_white = (model2_period2_tc_sig == model2_period2_white_rej_tc)
+
+#Are significances of parameters influenced by heteroskedasticity and auto corr in model2_period2 (after added SMW AMC) ?
+#TRUE = significance not modified by heteroskedasticity and auto corr = no heteroskedasticity and auto corr
+model2_period2_ta_sig_NeweyWest = (model2_period2_ta_sig == model2_period2_NeweyWest_rej_ta)
+model2_period2_tb_sig_NeweyWest = (model2_period2_tb_sig == model2_period2_NeweyWest_rej_tb)
+model2_period2_ts_sig_NeweyWest = (model2_period2_ts_sig == model2_period2_NeweyWest_rej_ts)
+model2_period2_th_sig_NeweyWest = (model2_period2_th_sig == model2_period2_NeweyWest_rej_th)
+model2_period2_tr_sig_NeweyWest = (model2_period2_tr_sig == model2_period2_NeweyWest_rej_tr)
+model2_period2_tc_sig_NeweyWest = (model2_period2_tc_sig == model2_period2_NeweyWest_rej_tc)
+
+# Before and after adding SMW AMC (comparing model1_period2 and model2_period2), the influence of heteroskedasticity and auto corr influence on significances of other parameters ?
+
+#is there heteroskedasticity in model1_period2 of Q5 ?
+#TRUE = rej H0 = significant
+model1_period2_white_rej_ta = (model1_period2_white_ta > qnorm(0.975) |
+                                 model1_period2_white_ta < qnorm(0.025))
+model1_period2_white_rej_tb = (model1_period2_white_tb > qnorm(0.975) |
+                                 model1_period2_white_tb < qnorm(0.025))
+model1_period2_white_rej_ts = (model1_period2_white_ts > qnorm(0.975) |
+                                 model1_period2_white_ts < qnorm(0.025))
+model1_period2_white_rej_th = (model1_period2_white_th > qnorm(0.975) |
+                                 model1_period2_white_th < qnorm(0.025))
+
+#is there heteroskedasticity and auto corr in model1_period2 of Q5 ?
+#TRUE = rej H0 = significant
+model1_period2_NeweyWest_rej_ta = (model1_period2_NeweyWest_ta >
+                                     qnorm(0.975) | model1_period2_NeweyWest_ta < qnorm(0.025))
+model1_period2_NeweyWest_rej_tb = (model1_period2_NeweyWest_tb >
+                                     qnorm(0.975) | model1_period2_NeweyWest_tb < qnorm(0.025))
+model1_period2_NeweyWest_rej_ts = (model1_period2_NeweyWest_ts >
+                                     qnorm(0.975) | model1_period2_NeweyWest_ts < qnorm(0.025))
+model1_period2_NeweyWest_rej_th = (model1_period2_NeweyWest_th >
+                                     qnorm(0.975) | model1_period2_NeweyWest_th < qnorm(0.025))
+
+# in model1_period2 of Q5, are significances of parameters modified by heteroskedasticity ?
+#TRUE = significance not modified by heteroskedasticity = no heteroskedasticity
+model1_period2_ta_sig_white = (model1_period2_rej_ta == model1_period2_white_rej_ta)
+model1_period2_tb_sig_white = (model1_period2_rej_tb == model1_period2_white_rej_tb)
+model1_period2_ts_sig_white = (model1_period2_rej_ts == model1_period2_white_rej_ts)
+model1_period2_th_sig_white = (model1_period2_rej_th == model1_period2_white_rej_th)
+
+# in model1_period2 of Q5, are significances of parameters modified by heteroskedasticity and auto corr?
+#TRUE = significance not modified by heteroskedasticity and auto corr = no heteroskedasticity and auto corr
+model1_period2_ta_sig_NeweyWest = (model1_period2_rej_ta == model1_period2_NeweyWest_rej_ta)
+model1_period2_tb_sig_NeweyWest = (model1_period2_rej_tb == model1_period2_NeweyWest_rej_tb)
+model1_period2_ts_sig_NeweyWest = (model1_period2_rej_ts == model1_period2_NeweyWest_rej_ts)
+model1_period2_th_sig_NeweyWest = (model1_period2_rej_th == model1_period2_NeweyWest_rej_th)
+
+#RMW, CMA jointly significance: F test
+D = (read.csv('25_Portfolios_5x5_AVWR_mm_63-17.csv')[,1]>="199401")
+factors_period2 = read.csv('F-F_Research_Data_5_Factors_2x3_63-17.csv')[D==TRUE,]
+Rf_period2 = factors_period2$RF
+Ri_period2 = read.csv('25_Portfolios_5x5_AVWR_mm_63-17.csv')[D==TRUE,][,2:26]
+exret_period2 = Ri_period2 - Rf_period2
+
+model2_period2_rmw_cma_ftest = matrix(0,5,5)
+for (i in 1:25){
+  model2_period2_restr = lm(exret_period2[,i]~mktexret_period2+smb_period2+hml_period2)
+  model2_period2_unrestr = lm(exret_period2[,i]~mktexret_period2+smb_period2+
+                                hml_period2+rmw_period2+cma_period2)
+  nrestr=2
+  model2_period2_ssrr=sum(model2_period2_restr$residuals^2)
+  model2_period2_ssru=sum(model2_period2_unrestr$residuals^2)
+  upf=(model2_period2_ssrr-model2_period2_ssru)/nrestr
+  lowf=(model2_period2_ssru/(length(mktexret_period2)-length(model2_period2_unrestr$coefficients)))
+  model2_period2_rmw_cma_ftest[i]=upf/lowf
+  #anova(model2_period2_restr,model2_period2_unrestr) is the same
+}
+model2_period2_rmw_cma_ftest = t(model2_period2_rmw_cma_ftest)
+
+#TRUE = rej H0 = RMW, CMA jointly significant
+threshold = qf(0.95,nrestr,length(mktexret_period2)-length(model2_period2_unrestr$coefficients))
+model2_period2_rmw_cma_ftest_sig = (model2_period2_rmw_cma_ftest >= threshold)
+
+#Are all the parameters jointly significant for new model ?
+#F statistics of new model
+model2_period2_all_ftest = matrix(0,5,5)
+for (i in 1:25){
+  model2_period2_unrestr = lm(exret_period2[,i]~mktexret_period2+smb_period2+
+                                hml_period2+rmw_period2+cma_period2)
+  #str(summary(model2_period2_unrestr))
+  model2_period2_all_ftest[i] = summary(model2_period2_unrestr)$fstatistic[1]
+}
+model2_period2_all_ftest = t(model2_period2_all_ftest)
+
+#TRUE = rej H0 = all parameters jointly significant
+threshold = qf(0.95,summary(model2_period2_unrestr)$fstatistic[2],
+               summary(model2_period2_unrestr)$fstatistic[3])
+model2_period2_all_ftest_sig = (model2_period2_all_ftest >= threshold)
+```
+
+##Q6-Answer and comment:
+
+Two new additional factors are added: RMW is the difference between the returns on diversified portfolios of stocks with robust and weak profitability; CMA is the difference between the returns on diversified portfolios of the stocks of low and high investment firms. 
+
+The regression t-statistic result is as follows:
+
+```{r Q6_answer1, echo = TRUE}
+model2_period2_ta
+model2_period2_tb
+model2_period2_ts
+model2_period2_th
+model2_period2_tr
+model2_period2_tc
+
+#individually significance: t tests
+# TRUE = rej H0 = individually significant
+model2_period2_ta_sig
+model2_period2_tb_sig
+model2_period2_ts_sig
+model2_period2_th_sig
+model2_period2_tr_sig
+model2_period2_tc_sig
+```
+
+According to t-statistic, individually, market excess return and SMB factors still remains to be significant. The HML factor has three t-tests yielding insignificance among all 25 tests. The RMW factor has four t-tests yielding insignificance among all 25 tests. The CMA factor has 15 t-tests yielding insignificance among all 25 tests. Therefore, individually speaking, the CMA factor, which is the return difference between low and high investment firms, may not play a significant role in explaining the portfolio returns. 
+
+For joint significance, we conduct two F-test. The first one is to test whether the additional two factors are jointly significant; the second one is to test whether all the parameters are significant.
+
+```{r Q6_answer2, echo = TRUE}
+#RMW, CMA jointly significance: F test
+model2_period2_rmw_cma_ftest
+#TRUE = rej H0 = RMW, CMA jointly significant
+model2_period2_rmw_cma_ftest_sig
+```
+
+Since 21 out 25 F-tests yield result true, we reject the null hypothesis that beta of RMW and beta of CMA equal zero. So in 21 portfolio models, the model with 5 factors are better than the model with 3 factors.
+
+```{r Q6_answer3, echo = TRUE}
+#Are all the parameters jointly significant for new model ?
+#F statistics of new model
+model2_period2_all_ftest
+#TRUE = rej H0 = all parameters jointly significant
+model2_period2_all_ftest_sig
+```
+
+And we also have parameters, t-statistics of this 5-factor model including those based on White and Newey-West standard errors to report:
+
+```{r Q6_answer4, echo = TRUE}
+model2_period2_Rsq = t(model2_period2_Rsq)
+model2_period2_a
+model2_period2_b
+model2_period2_s
+model2_period2_h
+model2_period2_r
+model2_period2_c
+
+model2_period2_white_ta
+model2_period2_white_tb
+model2_period2_white_ts
+model2_period2_white_th
+model2_period2_white_tr
+model2_period2_white_tc
+
+model2_period2_NeweyWest_ta
+model2_period2_NeweyWest_tb
+model2_period2_NeweyWest_ts
+model2_period2_NeweyWest_th
+model2_period2_NeweyWest_tr
+model2_period2_NeweyWest_tc
+
+#is there heteroskedasticity after added SMW AMC ?
+#TRUE = rej H0 = significant
+model2_period2_white_rej_ta
+model2_period2_white_rej_tb
+model2_period2_white_rej_ts
+model2_period2_white_rej_th
+model2_period2_white_rej_tr
+model2_period2_white_rej_tc
+
+#is there heteroskedasticity and auto corr after added SMW AMC ?
+#TRUE = rej H0 = significant
+model2_period2_NeweyWest_rej_ta
+model2_period2_NeweyWest_rej_tb
+model2_period2_NeweyWest_rej_ts
+model2_period2_NeweyWest_rej_th
+model2_period2_NeweyWest_rej_tr
+model2_period2_NeweyWest_rej_tc
+
+#after added SMW AMC, are significances of parameters modified by heteroskedasticity ?
+#TRUE = significance not modified by heteroskedasticity = no heteroskedasticity
+model2_period2_ta_sig_white
+model2_period2_tb_sig_white
+model2_period2_ts_sig_white
+model2_period2_th_sig_white
+model2_period2_tr_sig_white
+model2_period2_tc_sig_white
+
+#after added SMW AMC, are significances of parameters modified by heteroskedasticity and auto corr?
+#TRUE = significance not modified by heteroskedasticity and auto corr = no heteroskedasticity and auto corr
+model2_period2_ta_sig_NeweyWest
+model2_period2_tb_sig_NeweyWest
+model2_period2_ts_sig_NeweyWest
+model2_period2_th_sig_NeweyWest
+model2_period2_tr_sig_NeweyWest
+model2_period2_tc_sig_NeweyWest
+```
+
+Looking at the 5-factor model and the model incorporated with White test, Newey-West test respectively, we observe remarkable difference on t-statistics, especially of new parameters RMW and CMA. And Newey-West tests report a bit larger differences than White tests. 
+
+However, as we take a step further and use 5% significance level for a z-test, the result shows that taking into account heteroskedasticity and serial correlation doesn't systematically modify significance of parameters for any portfolio. Only significance of parameter r for portfolio small size and Book-to-market Equity 4, of parameter h for portfolio size 4 and Book-to-market Equity 2, of parameter c for portfolio size 2 and Book-to-market Equity 4 is reversed due to heteroskedasticity and serial correlation.
+
+# Q7
+Consider now only the combination of small excess returns portfolios and first book- to-market equity quintile. Compare (graphically) the density function of the residuals (eˆi) from the OLS regression in Question 3 with a Normal distribution with mean 0 and the same variance as the residuals. What do you conclude about normality of the residuals?
+
+```{r Q7_code}
+#Q7
+factors_period1 = read.csv('F-F_Research_Data_5_Factors_mm_2x3_63-93.csv')
+Rf_period1 = factors_period1$RF
+Ri_period1 = read.csv('25_Portfolios_5x5_AVWR_mm_63-93.csv')[,2:26]
+exret_period1 = Ri_period1 - Rf_period1
+
+model = lm(exret_period1[,1]~factors_period1$Mkt.RF+factors_period1$SMB+factors_period1$HML)
+d1 = density(model$residuals)
+d2 = density(rnorm(1000000,0,sd(model$residuals)))
+```
+
+##Q7-Answer and comment:
+
+```{r Q7_answer, echo = FALSE}
+colors = c("red", "blue")
+labels = c("residuals", "normal")
+plot(range(d1$x, d2$x), range(d1$y, d2$y), type = "n", xlab = "x", ylab = "Density", main = "Comparison of distributions")
+lines(d1, col = colors[1])
+lines(d2, lty = 2, col = colors[2])
+legend("topright", inset=.05, title="Distributions", labels, lwd=2, lty=c(1, 2), col=colors)
+```
+
+If we look at the probability density curves of residuals and a normal distribution with mean 0 and the same variance as the residuals, the two curves overlaps pretty well. The graph shows that the residuals closely follow a normal distribution.
